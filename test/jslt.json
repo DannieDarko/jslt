@@ -1,0 +1,38 @@
+{
+   "address" : {
+      "city" : {
+         "jsl:path" : "financials.billingAddress.city"
+      },
+      "country" : {
+         "jsl:path" : "financials.billingAddress.country"
+      }
+   },
+   "amazon-ordernumber" : {
+      "jsl:path" : "externalOrderNumber"
+   },
+   "currency" : {
+      "jsl:path" : "financials.currency"
+   },
+   "name" : {
+      "jsl:path" : "financials.billingAddress.name"
+   },
+   "ordernumber" : {
+      "jsl:path" : "documentNumber"
+   },
+   "positions" : {
+      "jsl:each" : {
+         "path" : "positions",
+         "template" : {
+            "price" : {
+               "jsl:path" : "price.amount"
+            },
+            "quantity" : {
+               "jsl:path" : "quantity"
+            },
+            "sku" : {
+               "jsl:path" : "product.number"
+            }
+         }
+      }
+   }
+}

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "JSLT"
+dynamic = ["version", "description"]
+authors = [
+  { name="Daniel Rexin", email="daniel@medinion.de" },
+]
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+]
+license = { text="MIT" }
+dependencies = [
+  "jmespath"
+]
+
+# [project.urls]
+# Homepage =
+# Issues =
