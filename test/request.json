@@ -1,0 +1,309 @@
+{
+   "autoCreateDocuments" : "deliveryNote+invoice",
+   "bodyIntroduction" : "",
+   "bodyOutroduction" : "",
+   "comment" : "",
+   "customer" : {
+      "id" : "12345",
+      "number" : "D-12345"
+   },
+   "customerOrderNumber" : null,
+   "date" : "2025-03-10",
+   "delivery" : {
+      "autoShipping" : true,
+      "conditions" : "",
+      "deliveryTerms" : null,
+      "email" : "",
+      "fastLane" : false,
+      "shippingAddress" : {
+         "city" : "Musterstadt",
+         "country" : "DE",
+         "department" : "",
+         "gln" : "",
+         "name" : "Maxine Musterfrau",
+         "state" : "",
+         "street" : "Musterstraße 1",
+         "subDepartment" : "",
+         "zipCode" : "12345"
+      },
+      "shippingMethod" : {
+         "id" : "11"
+      }
+   },
+   "desiredDeliveryDate" : null,
+   "desiredDeliveryDateCw" : false,
+   "documentNumber" : "AUF-202511-123456",
+   "earliestFulfillmentDate" : null,
+   "editor" : "",
+   "externalOrderId" : "303-0993322-1234567",
+   "externalOrderNumber" : "303-0993322-1234567",
+   "financials" : {
+      "billingAddress" : {
+         "addressSupplement" : "",
+         "city" : "Musterstadt",
+         "contactPerson" : "",
+         "country" : "DE",
+         "department" : "",
+         "email" : "xxxx12345xxxx@marketplace.amazon.de",
+         "fax" : "",
+         "gln" : "",
+         "name" : "Maxine Musterfrau",
+         "phoneNumber" : "",
+         "salutation" : "",
+         "state" : "",
+         "street" : "Musterstraße 1",
+         "subDepartment" : "",
+         "title" : "",
+         "type" : "",
+         "zipCode" : "12345"
+      },
+      "currency" : "EUR",
+      "paymentMethod" : {
+         "id" : "6"
+      },
+      "paymentTerms" : {
+         "paymentTargetDays" : 14,
+         "paymentTargetDiscount" : 0,
+         "paymentTargetDiscountDays" : 0
+      }
+   },
+   "id" : "12345",
+   "internalDesignation" : "",
+   "language" : {
+      "iso2" : ""
+   },
+   "log" : {
+      "createdAt" : "2025-03-10T17:03:12+01:00",
+      "createdBy" : {
+         "id" : "0",
+         "name" : ""
+      }
+   },
+   "netSales" : {
+      "amount" : "12.56",
+      "currency" : "EUR"
+   },
+   "positions" : [
+      {
+         "comment" : "",
+         "discount" : 0,
+         "grossRevenueSingle" : {
+            "amount" : "14.9500",
+            "currency" : "EUR"
+         },
+         "grossRevenueTotal" : {
+            "amount" : "14.9500",
+            "currency" : "EUR"
+         },
+         "hasChildren" : false,
+         "id" : "123450",
+         "netRevenueSingle" : {
+            "amount" : "12.5630",
+            "currency" : "EUR"
+         },
+         "netRevenueTotal" : {
+            "amount" : "12.5630",
+            "currency" : "EUR"
+         },
+         "parent" : null,
+         "price" : {
+            "amount" : "12.56302521",
+            "currency" : "EUR"
+         },
+         "product" : {
+            "description" : "",
+            "freeFields" : [
+               {
+                  "id" : "1",
+                  "value" : ""
+               },
+               {
+                  "id" : "2",
+                  "value" : ""
+               },
+               {
+                  "id" : "3",
+                  "value" : ""
+               },
+               {
+                  "id" : "4",
+                  "value" : ""
+               },
+               {
+                  "id" : "5",
+                  "value" : ""
+               },
+               {
+                  "id" : "6",
+                  "value" : ""
+               },
+               {
+                  "id" : "7",
+                  "value" : ""
+               },
+               {
+                  "id" : "8",
+                  "value" : ""
+               },
+               {
+                  "id" : "9",
+                  "value" : ""
+               },
+               {
+                  "id" : "10",
+                  "value" : ""
+               },
+               {
+                  "id" : "11",
+                  "value" : "made with organic cotton"
+               },
+               {
+                  "id" : "12",
+                  "value" : ""
+               },
+               {
+                  "id" : "13",
+                  "value" : ""
+               },
+               {
+                  "id" : "14",
+                  "value" : ""
+               },
+               {
+                  "id" : "15",
+                  "value" : ""
+               },
+               {
+                  "id" : "16",
+                  "value" : ""
+               },
+               {
+                  "id" : "17",
+                  "value" : ""
+               },
+               {
+                  "id" : "18",
+                  "value" : ""
+               },
+               {
+                  "id" : "19",
+                  "value" : ""
+               },
+               {
+                  "id" : "20",
+                  "value" : ""
+               },
+               {
+                  "id" : "21",
+                  "value" : ""
+               },
+               {
+                  "id" : "22",
+                  "value" : ""
+               },
+               {
+                  "id" : "23",
+                  "value" : ""
+               },
+               {
+                  "id" : "24",
+                  "value" : ""
+               },
+               {
+                  "id" : "25",
+                  "value" : ""
+               },
+               {
+                  "id" : "26",
+                  "value" : ""
+               },
+               {
+                  "id" : "27",
+                  "value" : ""
+               },
+               {
+                  "id" : "28",
+                  "value" : ""
+               },
+               {
+                  "id" : "29",
+                  "value" : ""
+               },
+               {
+                  "id" : "30",
+                  "value" : ""
+               },
+               {
+                  "id" : "31",
+                  "value" : ""
+               },
+               {
+                  "id" : "32",
+                  "value" : ""
+               },
+               {
+                  "id" : "33",
+                  "value" : ""
+               },
+               {
+                  "id" : "34",
+                  "value" : ""
+               },
+               {
+                  "id" : "35",
+                  "value" : ""
+               },
+               {
+                  "id" : "36",
+                  "value" : ""
+               },
+               {
+                  "id" : "37",
+                  "value" : ""
+               },
+               {
+                  "id" : "38",
+                  "value" : ""
+               },
+               {
+                  "id" : "39",
+                  "value" : ""
+               },
+               {
+                  "id" : "40",
+                  "value" : ""
+               }
+            ],
+            "id" : "7191",
+            "name" : "von Jungfeld - 1er Set Motiv Socken mit Fish - Aegean Blue Icon - Bunte Socken in Gr. 43-46",
+            "number" : "2561071253"
+         },
+         "quantity" : 1,
+         "sort" : 1,
+         "tax" : {
+            "effectiveVatRate" : 19,
+            "taxText" : "",
+            "vatCategory" : "normal"
+         },
+         "webId" : "47257125832962"
+      }
+   ],
+   "project" : {
+      "id" : "7"
+   },
+   "reservationDate" : null,
+   "sales" : {
+      "id" : null,
+      "name" : null
+   },
+   "salesChannel" : {
+      "id" : "3",
+      "name" : "Amazon"
+   },
+   "status" : "completed",
+   "total" : {
+      "amount" : "14.95",
+      "currency" : "EUR"
+   },
+   "transactionNumber" : ""
+}
