@@ -7,6 +7,7 @@ from functools import reduce
 from typing import Self, Union
 from copy import deepcopy
 
+
 class JSON(ABC):
     @abstractmethod
     def __iter__(self):
@@ -204,7 +205,7 @@ class JSONDict(JSON):
     ):
         res = None
         try:
-            path = re.sub(r'\$([^\.]+)', r'var(`\1`)', path)
+            path = re.sub(r"\$([^\.]+)", r"var(`\1`)", path)
             res = jmespath.search(path, self.__json__, options=options)
         except Exception as e:
             self.__logger__.error(f"Error in path {path}: {e}")
@@ -228,7 +229,7 @@ class JSLTFunctions(jmespath.functions.Functions):
     @jmespath.functions.signature({"types": ["array-number"]})
     def _func_multiply(self, numbers: list):
         return reduce(lambda result, mult: mult * result, numbers, 1)
-    
+
     @jmespath.functions.signature({"types": ["string"]})
     def _func_strip(self, strval: str):
         return strval.strip()
@@ -243,10 +244,13 @@ class JSLT:
         self.context = None
         self.parentContext = None
 
-    def jsl_var(self, name: str | None = None, value: type | None = None, path: str | None = None):
-        var_name = name or (
-            self.parentContext and self.parentContext.cur_key
-        )
+    def jsl_var(
+        self,
+        name: str | None = None,
+        value: type | None = None,
+        path: str | None = None,
+    ):
+        var_name = name or (self.parentContext and self.parentContext.cur_key)
         if not var_name:
             self.__logger__.error("Variable name is not set")
             return
@@ -256,6 +260,11 @@ class JSLT:
                 value = res.to_json()
         self.__logger__.info(f"Variable: {var_name} = {value}")
         self.vars[var_name] = value
+        return False
+
+    def jsl_vars(self, *vars):
+        for var in vars:
+            self.jsl_var(**var)
         return False
 
     def jsl_eval(self, path):
@@ -316,6 +325,10 @@ class JSLT:
         context = self.jsl_path(path)
         jslt = JSLT(template, defaults=self.defaults)
         jslt.vars["root"] = self.vars.get("root") or self.context.to_json()
+        for var_name, var_value in self.vars.items():
+            if var_name == "root":
+                continue
+            jslt.vars[var_name] = var_value
         if context is None:
             return None
         elif not isinstance(context, JSONList):
@@ -339,7 +352,7 @@ class JSLT:
                 cur_obj: list | dict,
                 cur_key: int | str,
                 parent: Self | None = None,
-                keep: bool = False
+                keep: bool = False,
             ):
                 self.cur_itm = cur_itm
                 self.cur_obj = cur_obj
@@ -377,7 +390,11 @@ class JSLT:
                     if res is None:
                         if parent.keep:
                             copy_stack.append(
-                                StackItem(self.defaults.get('default'), parent.cur_obj, parent.cur_key)
+                                StackItem(
+                                    self.defaults.get("default"),
+                                    parent.cur_obj,
+                                    parent.cur_key,
+                                )
                             )
                         else:
                             del parent.cur_obj[parent.cur_key]
@@ -385,20 +402,39 @@ class JSLT:
                         pass
                     else:
                         copy_stack.append(
-                            StackItem(res, parent.cur_obj, parent.cur_key, keep=self.defaults.get('keep', False))
+                            StackItem(
+                                res,
+                                parent.cur_obj,
+                                parent.cur_key,
+                                keep=self.defaults.get("keep", False),
+                            )
                         )
                 else:
                     self.__logger__.error(f"No such function: {jsl_function_name}")
             elif isinstance(cur_itm, list):
                 cur_obj[cur_key] = [None for i in range(len(cur_itm))]
                 copy_stack += [
-                    StackItem(v, cur_obj[cur_key], i, stack_item, keep=self.defaults.get('keep', False))
+                    StackItem(
+                        v,
+                        cur_obj[cur_key],
+                        i,
+                        stack_item,
+                        keep=self.defaults.get("keep", False),
+                    )
                     for i, v in enumerate(cur_itm)
                 ]
             elif isinstance(cur_itm, dict):
                 cur_obj[cur_key] = {}
                 for k, v in cur_itm.items():
-                    copy_stack.append(StackItem(v, cur_obj[cur_key], k, stack_item, keep=self.defaults.get('keep', False)))
+                    copy_stack.append(
+                        StackItem(
+                            v,
+                            cur_obj[cur_key],
+                            k,
+                            stack_item,
+                            keep=self.defaults.get("keep", False),
+                        )
+                    )
             else:
                 cur_obj[cur_key] = cur_itm
         return copy_obj["root"]
