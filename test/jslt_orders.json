@@ -1,0 +1,55 @@
+{
+   "jsl:each": {
+      "template": {
+         "jsl:var": {
+            "name": "order",
+            "path": "current()"
+         },
+         "address": {
+            "city": {
+               "jsl:path": "financials.billingAddress.city"
+            },
+            "country": {
+               "jsl:path": "financials.billingAddress.country"
+            }
+         },
+         "amazon-ordernumber": {
+            "jsl:path": "externalOrderNumber"
+         },
+         "currency": {
+            "jsl:path": "financials.currency"
+         },
+         "name": {
+            "jsl:path": "financials.billingAddress.name"
+         },
+         "ordernumber": {
+            "jsl:path": "documentNumber"
+         },
+         "positions": {
+            "jsl:each": {
+               "path": "positions",
+               "template": {
+                  "price": {
+                     "jsl:path": "price.amount"
+                  },
+                  "quantity": {
+                     "jsl:path": "quantity"
+                  },
+                  "total": {
+                     "jsl:eval": "round(price.amount/quantity-1+sqrt(float(price.amount)), 2)"
+                  },
+                  "sku": {
+                     "jsl:path": "product.number"
+                  },
+                  "country": {
+                     "jsl:path": "parent().financials.billingAddress.country"
+                  },
+                  "order_status": {
+                     "jsl:path": "var('order').status"
+                  }
+               }
+            }
+         }
+      }
+   }
+}

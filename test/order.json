@@ -27,7 +27,7 @@
          "zipCode" : "12345"
       },
       "shippingMethod" : {
-         "id" : "11"
+         "id" : "1"
       }
    },
    "desiredDeliveryDate" : null,
@@ -59,7 +59,7 @@
       },
       "currency" : "EUR",
       "paymentMethod" : {
-         "id" : "6"
+         "id" : "2"
       },
       "paymentTerms" : {
          "paymentTargetDays" : 14,
@@ -155,7 +155,7 @@
                },
                {
                   "id" : "11",
-                  "value" : "made with organic cotton"
+                  "value" : ""
                },
                {
                   "id" : "12",
@@ -274,9 +274,9 @@
                   "value" : ""
                }
             ],
-            "id" : "7191",
-            "name" : "von Jungfeld - 1er Set Motiv Socken mit Fish - Aegean Blue Icon - Bunte Socken in Gr. 43-46",
-            "number" : "2561071253"
+            "id" : "1",
+            "name" : "A product",
+            "number" : "1000123"
          },
          "quantity" : 1,
          "sort" : 1,
@@ -285,11 +285,11 @@
             "taxText" : "",
             "vatCategory" : "normal"
          },
-         "webId" : "47257125832962"
+         "webId" : "50000000000000"
       }
    ],
    "project" : {
-      "id" : "7"
+      "id" : "1"
    },
    "reservationDate" : null,
    "sales" : {
@@ -297,7 +297,7 @@
       "name" : null
    },
    "salesChannel" : {
-      "id" : "3",
+      "id" : "2",
       "name" : "Amazon"
    },
    "status" : "completed",

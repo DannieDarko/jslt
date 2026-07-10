@@ -29,6 +29,9 @@
             "quantity" : {
                "jsl:path" : "quantity"
             },
+            "total": {
+               "jsl:eval" : "round(price.amount/quantity-1+sqrt(float(price.amount)), 2)"
+            },
             "sku" : {
                "jsl:path" : "product.number"
             }

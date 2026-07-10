@@ -1,12 +1,49 @@
+"""
+JSLT Engine: A secure, high-performance JSON templating and transformation engine.
+
+Supports:
+- JMESPath-based data extraction
+- Custom DSL functions (jsl:var, jsl:if, jsl:each, jsl:keep, jsl:eval, jsl:path)
+- JSON Schema validation for templates and outputs
+- Stack-based iterative transformation (avoids recursion limits)
+- Safe expression evaluation (using simple_eval())
+"""
+from __future__ import annotations
+
 import jmespath
 import json
 import logging
+import math
+import operator
 import re
 from abc import ABC, abstractmethod
-from functools import reduce
-from typing import Self, Union
+from collections import deque
 from copy import deepcopy
+from functools import reduce
+from simpleeval import simple_eval
+from typing import Optional, Self
 
+# Typedef for numbers
+Number = int | float | complex
+
+# Operator mapping for safe comparisons
+_COMPARATORS = {
+    "=": operator.eq,
+    "==": operator.eq,
+    "!=": operator.ne,
+    "<": operator.lt,
+    ">": operator.gt,
+    "<=": operator.le,
+    ">=": operator.ge,
+}
+
+_COMPARATOR_CHARS = ''.join(set(''.join(_COMPARATORS.keys())))
+
+# Regex for parsing comparison expressions: term1 OP term2
+_COMP_RE = re.compile(f"^([^{_COMPARATOR_CHARS}]+)({'|'.join(_COMPARATORS.keys())})([^{_COMPARATOR_CHARS}]+)$")
+
+_NUMBER_RE = re.compile(r'^[0-9]*(\.[0-9]+)?$')
+_STRING_RE = re.compile(r'^"([^"]*)"$')
 
 class JSON(ABC):
     @abstractmethod
@@ -27,63 +64,85 @@ class JSON(ABC):
 
 
 class JSONList(JSON):
-    def __init__(self, children: list[JSON] = []):
+    """Wrapper for JSON arrays with JMESPath and DSL support."""
+    
+    __slots__ = ['logger', 'children']
+    
+    def __init__(self, children: Optional[list[JSON]] = []):
         logger = logging.getLogger(self.__class__.__name__)
         object.__setattr__(self, "__logger__", logger)
         object.__setattr__(self, "__children__", children)
 
-    def append(self, child: JSON):
+    def append(self, child: JSON) -> None:
         children = object.__getattribute__(self, "__children__")
         children.append(child)
 
-    def to_json(self):
+    def to_json(self) -> list:
         return [c.to_json() if isinstance(c, JSON) else c for c in self.__children__]
 
-    def copy(self):
+    def copy(self) -> Self:
         return type(self)(c.copy() for c in self.__children__)
 
-    def first(self):
+    def first(self) -> JSON:
         return self.__children__[0] if self.__children__ else JSONDict({})
 
-    def last(self):
+    def last(self) -> JSON:
         return self.__children__[-1] if self.__children__ else JSONDict({})
 
-    def current(self):
+    def current(self) -> Self:
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[{', '.join([str(c) for c in self.__children__])}]"
 
     def __iter__(self):
         return iter(self.__children__)
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str | int) -> JSON:
         children = object.__getattribute__(self, "__children__")
         if isinstance(key, int):
             return children[key]
-        match = re.match(r"^([^<>=!]+)(={1,2}|!=|<|>|<=|>=)([^<>=!]+)$", key)
+        match = _COMP_RE.match(key)
         found = []
         if match:
-            comp = "==" if match.group(2) == "=" else match.group(2)
+            comp = match.group(2)
             for child in children:
                 if isinstance(child, dict):
                     child = JSONDict(child)
-                if not isinstance(child, JSONDict):
+                elif not isinstance(child, JSONDict):
                     continue
-                term1 = str(child.jpath(match.group(1)))
-                term2 = str(child.jpath(match.group(3)))
-                if not re.match(r"^[0-9]*(\.[0-9]+)?$", term1):
-                    term1 = f"'{term1}'"
-                if not re.match(r"^[0-9]*(\.[0-9]+)?$", term2):
-                    term2 = f"'{term2}'"
+                term1 = match.group(1).strip()
+                term2 = match.group(3).strip()
+                is_numeric = False
+                if _NUMBER_RE.match(term1):
+                    term1 = float(term1)
+                    is_numeric = True
+                elif match := _STRING_RE.match(term1):
+                    term1 = match.group(1)
+                else:
+                    term1 = str(child.jpath(term1))
+                if _NUMBER_RE.match(term2):
+                    term2 = float(term2)
+                    if not is_numeric and _NUMBER_RE.match(term1):
+                        term1 = float(term1)
+                elif match := _STRING_RE.match(term2):
+                    term2 = match.group(1)
+                else:
+                    term2 = str(child.jpath(term2))
+                    if is_numeric and _NUMBER_RE.match(term2):
+                        term2 = float(term2)
                 self.__logger__.info(f"Filter: {term1} {comp} {term2}")
-                if eval(f"{term1}{comp}{term2}"):
+                comp_fn = _COMPARATORS[comp]
+                if comp_fn(term1, term2):
                     found.append(child)
         return JSONList(found)
 
-
 class JSONDict(JSON):
-    def __init__(self, _json: dict = {}, _value=None, _parent=None):
+    """Wrapper for JSON objects with attribute access, JMESPath, and DSL support."""
+
+    __slots__ = ['logger', '__value__', '__json__', '__parent__']
+    
+    def __init__(self, _json: Optional[dict] = {}, _value: Any = None, _parent: Optional[JSON] = None):
         object.__setattr__(
             self, "__logger__", logging.getLogger(self.__class__.__name__)
         )
@@ -91,19 +150,34 @@ class JSONDict(JSON):
         object.__setattr__(self, "__json__", _json)
         object.__setattr__(self, "__parent__", _parent)
 
-    def __getitem__(self, key: str):
-        match = re.match(r"^([^<>=!]+)(={1,2}|!=|<|>|<=|>=)([^<>=!]+)$", key)
+    def __getitem__(self, key: str) -> JSON:
+        match = _COMP_RE.match(key)
         found = type(self)()
         if match:
-            comp = "==" if match.group(2) == "=" else match.group(2)
-            term1 = str(self.jpath(match.group(1)))
-            term2 = str(self.jpath(match.group(3)))
-            if not re.match(r"^[0-9]*(\.[0-9]+)?$", term1):
-                term1 = f"'{term1}'"
-            if not re.match(r"^[0-9]*(\.[0-9]+)?$", term2):
-                term2 = f"'{term2}'"
+            comp = match.group(2)
+            term1 = match.group(1).strip()
+            term2 = match.group(3).strip()
+            is_numeric = False
+            if _NUMBER_RE.match(term1):
+                term1 = float(term1)
+                is_numeric = True
+            elif match := _STRING_RE.match(term1):
+                term1 = match.group(1)
+            else:
+                term1 = str(self.jpath(term1))
+            if _NUMBER_RE.match(term2):
+                term2 = float(term2)
+                if not is_numeric and _NUMBER_RE.match(term1):
+                    term1 = float(term1)
+            elif match := _STRING_RE.match(term2):
+                term2 = match.group(1)
+            else:
+                term2 = str(self.jpath(term2))
+                if is_numeric and _NUMBER_RE.match(term2):
+                    term2 = float(term2)
             self.__logger__.info(f"Filter: {term1} {comp} {term2})")
-            if eval(f"{term1}{comp}{term2}"):
+            comp_fn = _COMPARATORS[comp]
+            if comp_fn(term1, term2):
                 found = self
         return found
 
@@ -156,8 +230,27 @@ class JSONDict(JSON):
         else:
             return str(self.__json__)
 
-    def __float__(self):
-        return 0.1
+    def __int__(self) -> float:
+        if self.__value__ is not None:
+            return int(self.__value__)
+        raise TypeError("Cannot convert JSONDict without a scalar value to float")
+
+    def __float__(self) -> float:
+        if self.__value__ is not None:
+            return float(self.__value__)
+        raise TypeError("Cannot convert JSONDict without a scalar value to float")
+
+    def __add__(self, summand: Number | JSON):
+        return self.number() + float(summand)
+    
+    def __sub__(self, minuend: Number | JSON):
+        return self.number() - float(minuend)
+    
+    def __mul__(self, multiplicand: Number | JSON):
+        return self.number() * float(multiplicand)
+    
+    def __truediv__(self, divisor: Number | JSON):
+        return self.number() / float(divisor)
 
     def to_json(self):
         return self.__value__ or dict(self.__json__.copy())
@@ -199,7 +292,7 @@ class JSONDict(JSON):
     def jpath(
         self,
         path: str,
-        default: Union[None, object] = None,
+        default: Optional[object] = None,
         vars: dict = {},
         options: jmespath.Options | None = None,
     ):
@@ -212,7 +305,6 @@ class JSONDict(JSON):
             pass
         return res if res is not None else default
 
-
 class JSLTFunctions(jmespath.functions.Functions):
 
     def __init__(self, vars={}):
@@ -221,6 +313,14 @@ class JSLTFunctions(jmespath.functions.Functions):
     @jmespath.functions.signature()
     def _func_root(self):
         return self._vars.get("root", {})
+
+    @jmespath.functions.signature()
+    def _func_current(self):
+        return self._vars.get("current", {})
+
+    @jmespath.functions.signature()
+    def _func_parent(self):
+        return self._vars.get("parent", {})
 
     @jmespath.functions.signature({"types": ["string"]})
     def _func_var(self, name: str):
@@ -246,9 +346,9 @@ class JSLT:
 
     def jsl_var(
         self,
-        name: str | None = None,
-        value: type | None = None,
-        path: str | None = None,
+        name: Optional[str] = None,
+        value: Optional[type] = None,
+        path: Optional[str] = None,
     ):
         var_name = name or (self.parentContext and self.parentContext.cur_key)
         if not var_name:
@@ -267,30 +367,31 @@ class JSLT:
             self.jsl_var(**var)
         return False
 
-    def jsl_eval(self, path):
-        res = eval(
-            path,
-            {
-                "__builtins__": {
-                    "str": str,
-                    "int": int,
-                    "float": float,
-                    "abs": abs,
-                    "round": round,
-                    "copy": self.copy,
-                    "text": self.text,
-                    "number": self.number,
-                    "current": self.current,
-                }
-            },
-            {
-                **{k: self.get(k) for k in self.keys()},
-                **{f"__vars__{k}": v for k, v in vars.items()},
-            },
-        )
+    def jsl_eval(self, path: str):
+        """Safely evaluate a Python-like expression using simpleeval."""
+        safe_functions = {
+            "str": str,
+            "int": int,
+            "float": float,
+            "abs": abs,
+            "round": round,
+            "floor": math.floor,
+            "ceil": math.ceil,
+            "pow": math.pow,
+            "sqrt": math.sqrt,
+            "copy": self.context.copy,
+            "text": self.context.text,
+            "number": self.context.number,
+            "current": self.context.current,
+        }
+        safe_names = {
+            **{k: self.context.get(k) for k in self.context.keys()},
+            **{f"__vars__{k}": v for k, v in self.vars.items()},            
+        }
+        res = simple_eval(path, functions=safe_functions, names=safe_names)
         return res
 
-    def jsl_path(self, path, default=None):
+    def jsl_path(self, path: str, default: Any=None) -> Any:
         self.__logger__.info(f"Path: {path} ({default})")
         options = jmespath.Options(custom_functions=JSLTFunctions(vars=self.vars))
         res = self.context.jpath(path, default, options=options)
@@ -302,7 +403,7 @@ class JSLT:
             else JSONDict(_json=res) if isinstance(res, dict) else JSONDict(_value=res)
         )
 
-    def jsl_if(self, test, then, other):
+    def jsl_if(self, test: str, then: Any, other: Any):
         match = re.match(r"^([^<>=!]+)(={1,2}|!=|<|>|<=|>=)([^<>=!]+)$", test)
         if match:
             comp = "==" if match.group(2) == "=" else match.group(2)
@@ -321,12 +422,13 @@ class JSLT:
                 return then
         return other
 
-    def jsl_each(self, path=[], template={}):
-        context = self.jsl_path(path)
+    def jsl_each(self, path:Optional[str]=None, template={}):
+        context = self.jsl_path(path) if path else self.context
         jslt = JSLT(template, defaults=self.defaults)
         jslt.vars["root"] = self.vars.get("root") or self.context.to_json()
+        jslt.vars["parent"] = self.context.to_json()
         for var_name, var_value in self.vars.items():
-            if var_name == "root":
+            if var_name in ('root', 'parent'):
                 continue
             jslt.vars[var_name] = var_value
         if context is None:
@@ -334,24 +436,30 @@ class JSLT:
         elif not isinstance(context, JSONList):
             return jslt.transform(context)
         res = []
-        for item in context:
-            jslt.vars["current"] = item
-            res.append(jslt.transform(item))
-        return res
+        
+        return [self._jsl_each_item(jslt, item) for item in context]
+    
+    def _jsl_each_item(self, jslt, item):
+        jslt.vars["current"] = item
+        return jslt.transform(item)
+        
 
     def jsl_keep(self, keep: str):
         keep = bool(re.match(r"^([Tt][Rr][Uu][Ee]|1)$", keep))
         self.parentContext.keep = keep
         return False
 
-    def transform(self, json):
+    def transform(self, json: dict | list | JSON):
+        """Iteratively transform JSON data according to the template."""
         class StackItem:
+            """Internal stack frame for iterative transformation."""
+            __slots__ = ['cur_itm', 'cur_obj', 'cur_key', 'parent', 'keep']
             def __init__(
                 self,
                 cur_itm: object,
                 cur_obj: list | dict,
                 cur_key: int | str,
-                parent: Self | None = None,
+                parent: Optional[Self] = None,
                 keep: bool = False,
             ):
                 self.cur_itm = cur_itm
@@ -360,14 +468,14 @@ class JSLT:
                 self.parent = parent
                 self.keep = keep
 
-        self.context = JSONDict(json) if not isinstance(json, JSON) else json
+        self.context = JSONList(json) if isinstance(json, list) else JSONDict(json) if not isinstance(json, JSON) else json
         self.parentContext = None
         copy_obj = {"root": type(self.jslt)()}
         cur_itm = None
         stack_item = None
-        copy_stack = [StackItem(self.jslt, copy_obj, "root")]
+        copy_stack = deque([StackItem(self.jslt, copy_obj, "root")])
         while copy_stack:
-            stack_item = copy_stack.pop(0)
+            stack_item = copy_stack.popleft()
             parent = stack_item.parent
             self.parentContext = parent
             cur_itm = stack_item.cur_itm
