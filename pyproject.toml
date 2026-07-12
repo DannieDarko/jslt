@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel", "jmespath", "simpleeval"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.11.28,<0.12", "uv-dynamic-versioning"]
+build-backend = "uv_build"
 
 [project]
 name = "JSLT"
-dynamic = ["version"]
+version = "2.0.2"
 description = "JSON transformation/templating engine"
 authors = [
   { name="Daniel Rexin", email="daniel@medinion.de" },
@@ -16,19 +16,13 @@ classifiers = [
     "Operating System :: OS Independent",
     "License :: OSI Approved :: MIT License",
 ]
+keywords = ["json", "engine", "templating", "transformation", "jslt"]
 license = { file = "LICENSE"}
 dependencies = [
-  "jmespath>=1.1.0",
-  "simpleeval>=1.0.7",
+    "jmespath>=1.1.0",
+    "simpleeval>=1.0.7",
 ]
 
 [project.urls]
 Homepage = "https://github.com/danniedarko/jslt"
 Issues = "https://github.com/danniedarko/jslt/issues"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["jslt"]
-
-[tool.setuptools.dynamic]
-version = { attr = "jslt.__version__" }
