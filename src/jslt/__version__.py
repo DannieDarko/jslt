@@ -1,7 +1,7 @@
 __title__ = "JSLT"
 __description__ = "JSON transformation/templating engine"
 __url__ = ""
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 __author__ = "Daniel Rexin"
 __author_email__ = "daniel@medinion.de"
 __license__ = "MIT"
