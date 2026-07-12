@@ -42,7 +42,10 @@ _COMPARATOR_CHARS = ''.join(set(''.join(_COMPARATORS.keys())))
 # Regex for parsing comparison expressions: term1 OP term2
 _COMP_RE = re.compile(f"^([^{_COMPARATOR_CHARS}]+)({'|'.join(_COMPARATORS.keys())})([^{_COMPARATOR_CHARS}]+)$")
 
-_NUMBER_RE = re.compile(r'^[0-9]*(\.[0-9]+)?$')
+# Regex for identifying numbers
+_NUMBER_RE = re.compile(r'^([0-9]*)(\.[0-9]+)?$')
+
+# Regex for identifying strings 
 _STRING_RE = re.compile(r'^"([^"]*)"$')
 
 class JSON(ABC):
@@ -66,7 +69,7 @@ class JSON(ABC):
 class JSONList(JSON):
     """Wrapper for JSON arrays with JMESPath and DSL support."""
     
-    __slots__ = ['logger', 'children']
+    __slots__ = ['__logger__', '__children__']
     
     def __init__(self, children: Optional[list[JSON]] = []):
         logger = logging.getLogger(self.__class__.__name__)
@@ -92,8 +95,26 @@ class JSONList(JSON):
     def current(self) -> Self:
         return self
 
+    def jpath(
+        self,
+        path: str,
+        default: Optional[object] = None,
+        vars: dict = {},
+        options: jmespath.Options | None = None,
+    ):
+        res = None
+        try:
+            path = re.sub(r"\$([^\.]+)", r"var(`\1`)", path)
+            res = jmespath.search(f'[*].{path}', self.__children__, options=options)
+        except Exception as e:
+            self.__logger__.error(f"Error in path {path}: {e}")
+        return res if res is not None else default
+
     def __str__(self) -> str:
         return f"[{', '.join([str(c) for c in self.__children__])}]"
+    
+    def __len__(self) -> int:
+        return len(self.__children__)
 
     def __iter__(self):
         return iter(self.__children__)
@@ -135,12 +156,16 @@ class JSONList(JSON):
                 comp_fn = _COMPARATORS[comp]
                 if comp_fn(term1, term2):
                     found.append(child)
+        elif key=='*':
+            found=[child for child in children]
+        else:
+            found=self.jpath(key)
         return JSONList(found)
 
 class JSONDict(JSON):
     """Wrapper for JSON objects with attribute access, JMESPath, and DSL support."""
 
-    __slots__ = ['logger', '__value__', '__json__', '__parent__']
+    __slots__ = ['__logger__', '__value__', '__json__', '__parent__']
     
     def __init__(self, _json: Optional[dict] = {}, _value: Any = None, _parent: Optional[JSON] = None):
         object.__setattr__(
@@ -220,6 +245,9 @@ class JSONDict(JSON):
 
     def __hasattr__(self, attr: str):
         print("hasattr", attr)
+        
+    def __len__(self) -> int:
+        return len(self.__json__)
 
     def __iter__(self):
         return iter(self.__json__)
@@ -302,7 +330,6 @@ class JSONDict(JSON):
             res = jmespath.search(path, self.__json__, options=options)
         except Exception as e:
             self.__logger__.error(f"Error in path {path}: {e}")
-            pass
         return res if res is not None else default
 
 class JSLTFunctions(jmespath.functions.Functions):
@@ -383,6 +410,8 @@ class JSLT:
             "text": self.context.text,
             "number": self.context.number,
             "current": self.context.current,
+            "count": len,
+            "sum": sum,
         }
         safe_names = {
             **{k: self.context.get(k) for k in self.context.keys()},
@@ -392,7 +421,7 @@ class JSLT:
         return res
 
     def jsl_path(self, path: str, default: Any=None) -> Any:
-        self.__logger__.info(f"Path: {path} ({default})")
+        self.__logger__.info(f"Path: {path} (default: {default})")
         options = jmespath.Options(custom_functions=JSLTFunctions(vars=self.vars))
         res = self.context.jpath(path, default, options=options)
         if not res:
@@ -403,22 +432,33 @@ class JSLT:
             else JSONDict(_json=res) if isinstance(res, dict) else JSONDict(_value=res)
         )
 
-    def jsl_if(self, test: str, then: Any, other: Any):
-        match = re.match(r"^([^<>=!]+)(={1,2}|!=|<|>|<=|>=)([^<>=!]+)$", test)
+    def jsl_if(self, test: str, then: Any, other: Any=None):
+        match = _COMP_RE.match(test)
         if match:
-            comp = "==" if match.group(2) == "=" else match.group(2)
-            term1 = match.group(1)
-            if term1[:5] == "path:":
-                term1 = str(self.jsl_path(term1[5:]))
-            term2 = match.group(3)
-            if term2[:5] == "path:":
-                term2 = str(self.jsl_path(term2[5:]))
-            if not re.match(r"^[0-9]*(\.[0-9]+)?$", term1):
-                term1 = f"'{term1}'"
-            if not re.match(r"^[0-9]*(\.[0-9]+)?$", term2):
-                term2 = f"'{term2}'"
-            self.__logger__.info((term1, comp, term2))
-            if eval(f"{term1}{comp}{term2}"):
+            comp = match.group(2)
+            term1 = match.group(1).strip()
+            term2 = match.group(3).strip()
+            is_numeric = False
+            if _NUMBER_RE.match(term1):
+                term1 = float(term1)
+                is_numeric = True
+            elif match := _STRING_RE.match(term1):
+                term1 = match.group(1)
+            else:
+                term1 = str(self.jsl_path(term1))
+            if _NUMBER_RE.match(term2):
+                term2 = float(term2)
+                if not is_numeric and _NUMBER_RE.match(term1):
+                    term1 = float(term1)
+            elif match := _STRING_RE.match(term2):
+                term2 = match.group(1)
+            else:
+                term2 = str(self.jsl_path(term2))
+                if is_numeric and _NUMBER_RE.match(term2):
+                    term2 = float(term2)
+            self.__logger__.info(f"Filter: {term1} {comp} {term2})")
+            comp_fn = _COMPARATORS[comp]
+            if comp_fn(term1, term2):
                 return then
         return other
 
@@ -437,7 +477,7 @@ class JSLT:
             return jslt.transform(context)
         res = []
         
-        return [self._jsl_each_item(jslt, item) for item in context]
+        return [item for child in context if (item := self._jsl_each_item(jslt, child))]
     
     def _jsl_each_item(self, jslt, item):
         jslt.vars["current"] = item
@@ -545,4 +585,4 @@ class JSLT:
                     )
             else:
                 cur_obj[cur_key] = cur_itm
-        return copy_obj["root"]
+        return copy_obj["root"] if 'root' in copy_obj else None
