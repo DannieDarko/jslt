@@ -2,7 +2,6 @@ import jmespath
 import logging
 from functools import reduce
 
-
 class JSLTFunctions(jmespath.functions.Functions):
     __slots__ = ['_logger', '_vars']
     def __init__(self, vars={}):

@@ -18,6 +18,7 @@ import operator
 import re
 from collections import deque
 from copy import deepcopy
+from functools import lru_cache
 from simpleeval import simple_eval
 from typing import Optional, Self
 
@@ -36,6 +37,7 @@ class JSLT:
         self.context = None
         self.parentContext = None
 
+    @lru_cache
     def _jsl_var(
         self,
         name: Optional[str] = None,
@@ -54,6 +56,7 @@ class JSLT:
         self.vars[var_name] = value
         return False
 
+    @lru_cache
     def _jsl_vars(self, *vars):
         for var in vars:
             self._jsl_var(**var)
@@ -85,6 +88,7 @@ class JSLT:
         res = simple_eval(path, functions=safe_functions, names=safe_names)
         return res
 
+    @lru_cache
     def _jsl_path(self, path: str, default: Any=None) -> Any:
         self._logger.info(f"Path: {path} (default: {default})")
         options = jmespath.Options(custom_functions=JSLTFunctions(vars=self.vars))
@@ -150,6 +154,7 @@ class JSLT:
         jslt.vars["current"] = item
         return jslt.transform(item)
         
+    @lru_cache
     def _jsl_keep(self, keep: str):
         keep = bool(re.match(r"^([Tt][Rr][Uu][Ee]|1)$", keep))
         self.parentContext.keep = keep

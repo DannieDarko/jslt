@@ -22,7 +22,6 @@ classifiers = [
 keywords = ["json", "engine", "templating", "transformation", "jslt"]
 license = { file = "LICENSE"}
 dependencies = [
-    "frozendict>=2.4.7",
     "jmespath>=1.1.0",
     "simpleeval>=1.0.7",
 ]
@@ -30,4 +29,4 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/danniedarko/jslt"
 Issues = "https://github.com/danniedarko/jslt/issues"
-Repository = ""
+Repository = "https://github.com/danniedarko/jslt"
