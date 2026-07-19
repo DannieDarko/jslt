@@ -46,6 +46,17 @@ template = {
       }
     },
     
+    # Extract only adult users using jmespath
+    "adults_jpath_2": {
+      "jsl:each": {
+        "path": "users[?age>root().threshold]",
+        "template": {
+          "name": {
+            "jsl:path": "name"
+          }
+        }
+      }
+    },
     # Find names with score > 90
     "top_scorers": {"jsl:path": "users[?score>`90`].name"},
     

@@ -46,8 +46,8 @@ def benchmark_transform(iterations: int=10_000):
     print(f'Total {len(transformed)} in {timedelta(seconds=time()-start_time)}')
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
     if len(sys.argv)>1 and sys.argv[1] == 'benchmark':
+        logging.basicConfig(level=logging.ERROR)
         benchmark_transform()
     else:
         test_transform()

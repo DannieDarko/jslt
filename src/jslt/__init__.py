@@ -8,11 +8,10 @@ from .__version__ import (
     __url__,
     __version__,
 )
-from .jslt import JSON, JSONDict, JSONList, JSLT
+from jslt import models
+from jslt.engine import JSLT
 
 __all__=[
-    JSON,
-    JSONDict,
-    JSONList,
+    models,
     JSLT
 ]
