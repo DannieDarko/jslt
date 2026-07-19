@@ -18,6 +18,11 @@ class JSONList(JSON):
         super().__setattr__("__logger__", logger)
         super().__setattr__("__children__", children)
 
+    def freeze():
+        for child in __children__:
+            if isinstance(child, JSON):
+                child.freeze()
+        
     def append(self, child: JSON) -> None:
         children = super().__getattribute__("__children__")
         children.append(child)

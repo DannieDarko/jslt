@@ -26,6 +26,10 @@ class JSONDict(JSON):
         super().__setattr__("__json__", _json)
         super().__setattr__("__parent__", _parent)
     
+    def freeze(self):
+        if isinstance(self.__json__, dict):
+            super().__setattr__("__json__", frozendict(self.__json__))
+
     def __getitem__(self, key: str) -> JSON:
         match = _COMP_RE.match(key)
         found = type(self)()

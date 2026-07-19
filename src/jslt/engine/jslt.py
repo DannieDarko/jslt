@@ -25,6 +25,10 @@ from typing import Optional, Self
 from jslt.engine.functions import JSLTFunctions
 from jslt.models import JSON, JSONDict, JSONList
 from jslt.utils.constants import COMPARATORS, COMP_RE, NUMBER_RE, STRING_RE, JSLT_FUNC_RE
+from jslt.utils.decorators import freezeargs
+
+class JSLTFunction(type):
+    pass
 
 class JSLT:
     __slots__ = ['_logger', 'jslt', 'defaults', 'vars', 'context', 'parentContext']
@@ -62,6 +66,7 @@ class JSLT:
             self._jsl_var(**var)
         return False
 
+    @lru_cache
     def _jsl_eval(self, path: str):
         """Safely evaluate a Python-like expression using simpleeval."""
         safe_functions = {
@@ -88,6 +93,7 @@ class JSLT:
         res = simple_eval(path, functions=safe_functions, names=safe_names)
         return res
 
+    @freezeargs
     @lru_cache
     def _jsl_path(self, path: str, default: Any=None) -> Any:
         self._logger.info(f"Path: {path} (default: {default})")
@@ -101,6 +107,7 @@ class JSLT:
             else JSONDict(_json=res) if isinstance(res, dict) else JSONDict(_value=res)
         )
 
+    @freezeargs
     def _jsl_if(self, test: str, then: Any, other: Any=None):
         match = COMP_RE.match(test)
         if match:
