@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class JSON(ABC):
     @abstractmethod
     def __iter__(self):

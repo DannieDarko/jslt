@@ -1,17 +1,6 @@
-from .__version__ import (
-    __author__,
-    __author_email__,
-    __copyright__,
-    __description__,
-    __license__,
-    __title__,
-    __url__,
-    __version__,
-)
 from jslt import models
 from jslt.engine import JSLT
 
-__all__=[
-    models,
-    JSLT
-]
+from .__version__ import __version__
+
+__all__ = [__version__, models, JSLT]

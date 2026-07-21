@@ -1,16 +1,19 @@
-import jmespath
 import logging
 import re
 from copy import deepcopy
-from typing import Optional, Any, Self
+from typing import Any, Optional
 
+import jmespath
+
+from jslt.models.base import JSON
+from jslt.models.jsonlist import JSONList
+from jslt.utils.constants import COMP_RE, COMPARATORS, NUMBER_RE, STRING_RE
 from jslt.utils.types import Number
-from .json import JSON
-from .jsonlist import JSONList
+
 
 class JSONDict(JSON):
     """Wrapper for JSON objects with attribute access, JMESPath, and DSL support."""
-    
+
     __slots__ = ["__logger__", "__value__", "__json__", "__parent__"]
 
     def __init__(
@@ -19,40 +22,38 @@ class JSONDict(JSON):
         _value: Any = None,
         _parent: Optional[JSON] = None,
     ):
-        super().__setattr__(
-            "__logger__", logging.getLogger(self.__class__.__name__)
-        )
+        super().__setattr__("__logger__", logging.getLogger(self.__class__.__name__))
         super().__setattr__("__value__", _value)
         super().__setattr__("__json__", _json)
         super().__setattr__("__parent__", _parent)
-    
+
     def __getitem__(self, key: str) -> JSON:
-        match = _COMP_RE.match(key)
+        match = COMP_RE.match(key)
         found = type(self)()
         if match:
             comp = match.group(2)
             term1 = match.group(1).strip()
             term2 = match.group(3).strip()
             is_numeric = False
-            if _NUMBER_RE.match(term1):
+            if NUMBER_RE.match(term1):
                 term1 = float(term1)
                 is_numeric = True
-            elif match := _STRING_RE.match(term1):
+            elif match := STRING_RE.match(term1):
                 term1 = match.group(1)
             else:
                 term1 = str(self.jpath(term1))
-            if _NUMBER_RE.match(term2):
+            if NUMBER_RE.match(term2):
                 term2 = float(term2)
-                if not is_numeric and _NUMBER_RE.match(term1):
+                if not is_numeric and NUMBER_RE.match(term1):
                     term1 = float(term1)
-            elif match := _STRING_RE.match(term2):
+            elif match := STRING_RE.match(term2):
                 term2 = match.group(1)
             else:
                 term2 = str(self.jpath(term2))
-                if is_numeric and _NUMBER_RE.match(term2):
+                if is_numeric and NUMBER_RE.match(term2):
                     term2 = float(term2)
             self.__logger__.info(f"Filter: {term1} {comp} {term2})")
-            comp_fn = _COMPARATORS[comp]
+            comp_fn = COMPARATORS[comp]
             if comp_fn(term1, term2):
                 found = self
         return found
@@ -143,7 +144,7 @@ class JSONDict(JSON):
     def values(self):
         return self.__json__.values()
 
-    def get(self, name: str, default: Any={}):
+    def get(self, name: str, default: Any = {}):
         attr = self.__json__.get(name, default)
         if isinstance(attr, list):
             return JSONList(attr)

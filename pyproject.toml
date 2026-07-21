@@ -30,3 +30,22 @@ dependencies = [
 Homepage = "https://github.com/danniedarko/jslt"
 Issues = "https://github.com/danniedarko/jslt/issues"
 Repository = "https://github.com/danniedarko/jslt"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.22",
+]
+
+[tool.ruff]
+
+[tool.ruff.lint]
+
+[tool.black]
+line-length = 88
+target-version = ['py37']
+include = '\.pyi?$'
+# 'extend-exclude' excludes files or directories in addition to the defaults
+
+[tool.isort]
+profile = "black"
+line_length = 88

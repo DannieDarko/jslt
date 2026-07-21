@@ -1,3 +1,4 @@
-from .jslt import JSLT
+from .functions import Functions
+from .transform import JSLT
 
-__all__ = [JSLT]
+__all__ = [JSLT, Functions]

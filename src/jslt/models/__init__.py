@@ -1,4 +1,4 @@
-from .json import JSON
+from .base import JSON
 from .jsondict import JSONDict
 from .jsonlist import JSONList
 

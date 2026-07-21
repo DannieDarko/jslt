@@ -1,38 +1,45 @@
-import jmespath
 import logging
 import re
-from typing import Optional, Any, Self
+from typing import Optional, Self
 
-from jslt.utils.constants import COMPARATORS, COMPARATOR_CHARS, COMP_RE, NUMBER_RE, STRING_RE
-from jslt.utils.types import Number
+import jmespath
 
-from jslt.models.json import JSON
+import jslt.models as models
+from jslt.utils.constants import (
+    COMP_RE,
+    COMPARATORS,
+    NUMBER_RE,
+    STRING_RE,
+)
 
-class JSONList(JSON):
+
+class JSONList(models.JSON):
     """Wrapper for JSON arrays with JMESPath and DSL support."""
-    
+
     __slots__ = ["__logger__", "__children__"]
-        
-    def __init__(self, children: Optional[list[JSON]] = []):
+
+    def __init__(self, children: Optional[list[models.JSON]] = []):
         logger = logging.getLogger(self.__class__.__name__)
         super().__setattr__("__logger__", logger)
         super().__setattr__("__children__", children)
 
-    def append(self, child: JSON) -> None:
+    def append(self, child: models.JSON) -> None:
         children = super().__getattribute__("__children__")
         children.append(child)
 
     def to_json(self) -> list:
-        return [c.to_json() if isinstance(c, JSON) else c for c in self.__children__]
+        return [
+            c.to_json() if isinstance(c, models.JSON) else c for c in self.__children__
+        ]
 
     def copy(self) -> Self:
         return type(self)(c.copy() for c in self.__children__)
 
-    def first(self) -> JSON:
-        return self.__children__[0] if self.__children__ else JSONDict({})
+    def first(self) -> models.JSON:
+        return self.__children__[0] if self.__children__ else models.JSONDict({})
 
-    def last(self) -> JSON:
-        return self.__children__[-1] if self.__children__ else JSONDict({})
+    def last(self) -> models.JSON:
+        return self.__children__[-1] if self.__children__ else models.JSONDict({})
 
     def current(self) -> Self:
         return self
@@ -47,21 +54,21 @@ class JSONList(JSON):
         res = None
         try:
             path = re.sub(r"\$([^\.]+)", r"var(`\1`)", path)
-            res = jmespath.search(f'[*].{path}', self.__children__, options=options)
+            res = jmespath.search(f"[*].{path}", self.__children__, options=options)
         except Exception as e:
             self.__logger__.error(f"Error in path {path}: {e}")
         return res if res is not None else default
 
     def __str__(self) -> str:
         return f"[{', '.join([str(c) for c in self.__children__])}]"
-    
+
     def __len__(self) -> int:
         return len(self.__children__)
 
     def __iter__(self):
         return iter(self.__children__)
 
-    def __getitem__(self, key: str | int) -> JSON:
+    def __getitem__(self, key: str | int) -> models.JSON:
         children = super().__getattribute__("__children__")
         if isinstance(key, int):
             return children[key]
@@ -71,8 +78,8 @@ class JSONList(JSON):
             comp = match.group(2)
             for child in children:
                 if isinstance(child, dict):
-                    child = JSONDict(child)
-                elif not isinstance(child, JSONDict):
+                    child = models.JSONDict(child)
+                elif not isinstance(child, models.JSONDict):
                     continue
                 term1 = match.group(1).strip()
                 term2 = match.group(3).strip()
@@ -98,8 +105,8 @@ class JSONList(JSON):
                 comp_fn = COMPARATORS[comp]
                 if comp_fn(term1, term2):
                     found.append(child)
-        elif key=='*':
-            found=[child for child in children]
+        elif key == "*":
+            found = [child for child in children]
         else:
-            found=self.jpath(key)
+            found = self.jpath(key)
         return JSONList(found)
