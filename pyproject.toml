@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "JSLT"
-version = "2.2.0"
+version = "2.2.1"
 description = "JSON transformation/templating engine"
 authors = [
   { name="Daniel Rexin", email="daniel@medinion.de" },
