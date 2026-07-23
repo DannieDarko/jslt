@@ -233,7 +233,7 @@ class JMESPathFunctions(jmespath.functions.Functions):
     __slots__ = ["_logger", "_vars"]
 
     def __init__(self, vars={}):
-        self._logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__class__.__qualname__)
         self._vars = vars
 
     @jmespath.functions.signature()

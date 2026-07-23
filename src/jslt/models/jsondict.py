@@ -22,7 +22,7 @@ class JSONDict(JSON):
         _value: Any = None,
         _parent: Optional[JSON] = None,
     ):
-        super().__setattr__("__logger__", logging.getLogger(self.__class__.__name__))
+        super().__setattr__("__logger__", logging.getLogger(__class__.__qualname__))
         super().__setattr__("__value__", _value)
         super().__setattr__("__json__", _json)
         super().__setattr__("__parent__", _parent)
