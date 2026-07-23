@@ -1,3 +1,4 @@
+import json
 import logging
 from jslt.engine.functions import Functions
 from jslt.engine.transform import JSLT
@@ -11,15 +12,15 @@ class CustomFunctions(Functions):
 def run_tranform():
     tmpl = {
         "root": {
-            "my_value": "some",
-            "custom_value": {"custom:decorate_string": "static value"},
+            "my_value": "some value",
+            "custom_value": {"custom:decorate_string": "custom value"},
         }
     }
 
     jslt_engine = JSLT(tmpl)
-    print(jslt_engine.transform({}))
+    return jslt_engine.transform({})
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    run_tranform()
+    print(json.dumps(run_tranform(), indent=4))
