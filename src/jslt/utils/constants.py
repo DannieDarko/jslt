@@ -26,6 +26,6 @@ NUMBER_RE = re.compile(r"^([0-9]*)(\.[0-9]+)?$")
 STRING_RE = re.compile(r'^"([^"]*)"$')
 
 # Regex for JSLT function signature
-JSLT_FUNC_RE = re.compile(r"^([a-z]+):([a-z]+)$")
+JSLT_FUNC_RE = re.compile(r"^([a-z]+):([a-z\_]+)$")
 
 JSL_FUNC_RE = re.compile(r"^\_([a-z]+)\_([a-z\_]+)$")
