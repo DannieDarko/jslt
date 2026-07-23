@@ -142,5 +142,57 @@ Custom functions are injected into JMESPath to provide additional functionality:
 
 ---
 
+## 𝑓 Developing custom DSL functions
+
+To integrate custom functions you simply have to create a class inheriting from `jslt.engine.functions.Functions`
+Each function defined within the class using the following naming convention will be registered as a custom function:
+`_{namespace}_{function_name}`
+`namespace` may contain only lowercase chars
+`function_name` may only contain lowercase chars and underscores
+
+The first parameter passed to each function will be the execution context of type `JSLT.Context`
+The following parameters may be named parameters where each parameter will correspond to the value of the respective object key if the item is an object.
+If the item is a list, each list item will be passed as a positional parameter.
+A single value will be passed to the function as a positional parameter.
+
+Within the template DSL you may call your custom functions using object keys in the format `{namespace}:{function_name}`
+
+### Example
+
+**Function code**
+```python
+from jslt.engine.functions import Functions
+from jslt.engine.transform import JSLT
+
+
+class CustomFunctions(Functions):
+    def _custom_decorate_string(ctx: JSLT.Context, value: str):
+        return f"### {value} ###"
+```
+
+**Template**
+```json
+{
+    "root": {
+        "my_value": "some value",
+        "custom_value": {
+            "custom:decorate_string": "custom value"
+        }
+    }
+}
+```
+
+**Output***
+```json
+{
+    "root": {
+        "my_value": "some value",
+        "custom_value": "### custom value ###"
+    }
+}
+```
+---
+
 ## 📜 License
+
 This project is licensed under the MIT License. See `LICENSE` for details.
