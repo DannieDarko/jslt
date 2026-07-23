@@ -51,6 +51,16 @@ DSL functions available to use inside templates
 
 class JSLFunctions(Functions):
     def _jsl_path(ctx, path: str, default: Any = None) -> Any:
+        """
+        Extract data from current node using JMESPath
+
+        Args:
+            path: JMESPatch to search for
+            default: Default value to return if result is empty
+
+        Returns:
+            JMESPath result or default value if empty
+        """
         ctx._logger.info(f"Path: {path} (default: {default})")
         options = jmespath.Options(custom_functions=JMESPathFunctions(vars=ctx.vars))
         res = ctx.current.jpath(path, default, options=options)
@@ -68,6 +78,14 @@ class JSLFunctions(Functions):
         value: Optional[type] = None,
         path: Optional[str] = None,
     ):
+        """
+        Declares internal variable
+
+        Args:
+            name: The variables name. If omitted, the enclosing objects key will be used
+            value: Constant value to assign to variable
+            path: JMESPath to extract data from to assign to variable
+        """
         var_name = name or (ctx.context.parent and ctx.context.parent.cur_key)
         if not var_name:
             ctx._logger.error("Variable name is not set")
@@ -81,12 +99,23 @@ class JSLFunctions(Functions):
         return False
 
     def _jsl_vars(ctx, *vars):
+        """
+        Declare multiple variables at once
+
+        Args:
+            *vars: List of variable definitions (see _jsl_var)
+        """
         for var in vars:
             ctx._jsl_var(**var)
         return False
 
-    def _jsl_eval(ctx, path: str):
-        """Safely evaluate a Python-like expression using simpleeval."""
+    def _jsl_eval(ctx, expression: str):
+        """
+        Safely evaluate a Python-like expression using simpleeval.
+
+        Args:
+            expression: Expression to evaluate
+        """
         safe_functions = {
             "str": str,
             "int": int,
@@ -108,10 +137,18 @@ class JSLFunctions(Functions):
             **{k: ctx.current.get(k) for k in ctx.current.keys()},
             **{f"__vars__{k}": v for k, v in ctx.vars.items()},
         }
-        res = simple_eval(path, functions=safe_functions, names=safe_names)
+        res = simple_eval(expression, functions=safe_functions, names=safe_names)
         return res
 
     def _jsl_if(ctx, test: str, then: Any, other: Any = None):
+        """
+        Test an expression do determine which value/subtemplate to use
+
+        Args:
+            test: Expression to test
+            then: Value/Subtemplate to use when expression evaluates to True
+            otehr: Value/Subtemplate to use otherwise
+        """
         match = COMP_RE.match(test)
         if match:
             comp = match.group(2)
@@ -142,6 +179,13 @@ class JSLFunctions(Functions):
         return other
 
     def _jsl_each(ctx, path: Optional[str] = None, template: dict | list = {}):
+        """
+        Apply subtemplate to all list members
+
+        Args:
+            path: JMESPath used to identify list to iterate over. If omitted, current context will be used.
+            template: Subtemplate to apply to each list item
+        """
         context = ctx._jsl_path(path) if path else ctx.current
         jslt = ctx.engine_class(template, defaults=ctx.defaults)
         jslt.context.vars["root"] = ctx.vars.get("root")
@@ -158,10 +202,23 @@ class JSLFunctions(Functions):
         return [item for child in context if (item := ctx._jsl_each_item(jslt, child))]
 
     def _jsl_each_item(ctx, jslt: Any, item: list | dict | JSON):
+        """
+        Internal function used to apply template to each list item
+
+        Args:
+            jslt: Templating engine with active template to use
+            item: List item
+        """
         jslt.context.vars["current"] = item
         return jslt.transform(item)
 
     def _jsl_keep(ctx, keep: str):
+        """
+        Tells engine to keep enclosing object even if it evaluates to empty
+
+        Args:
+            keep: Defines whether to keep object
+        """
         keep = bool(re.match(r"^([Tt][Rr][Uu][Ee]|1)$", keep))
         ctx.parent.keep = keep
         return False
